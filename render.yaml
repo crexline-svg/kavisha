@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: smartphone-recommendation
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements-render.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: ABSA_ENGINE
+        value: lexicon
+      - key: SEED_DEMO
+        value: "true"

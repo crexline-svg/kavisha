@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phone Recommender</title>
+<script>
+(function () {
+  var saved = localStorage.getItem('phone-recommender-theme');
+  document.documentElement.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v={{ASSET_VERSION}}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230f766e'/><text y='68' x='50' font-size='58' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>P</text></svg>">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-title">
+        <div class="brand-mark" aria-hidden="true">P</div>
+        <div>
+          <div class="brand-name">Phone Recommender</div>
+          <div class="brand-sub">Review aspects → ranked picks</div>
+        </div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">Navigate</div>
+      <div class="nav-item active" data-view="phones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+        <span>Phones</span>
+        <span class="nav-badge" id="badge-phones">-</span>
+      </div>
+      <div class="nav-item" data-view="recommend">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18.5 5.5 22 7 14.5 2 9.5 9 9"/></svg>
+        <span>Recommend</span>
+      </div>
+      <div class="nav-item" data-view="evaluation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 3 5-6"/></svg>
+        <span>Evaluation</span>
+      </div>
+      <div class="nav-item" data-view="evidence">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Evidence</span>
+      </div>
+    </nav>
+    <div class="sidebar-foot">
+      <div><span class="dot" id="health-dot"></span><span id="health-text">connecting…</span></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="btn btn-ghost menu-toggle" id="menu-toggle" style="place-items:center">☰</button>
+      <div>
+        <h1 id="page-title">Phones</h1>
+        <div class="topbar-sub" id="page-sub">Browse smartphones with aspect scores from Amazon reviews</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-icon theme-toggle" id="btn-theme" type="button" aria-pressed="false" aria-label="Switch to dark mode" title="Switch to dark mode">
+          <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </button>
+        <span class="chip info" id="engine-chip">engine: …</span>
+        <button class="btn btn-sm" id="btn-refresh">Refresh</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- Recommend -->
+      <section class="view" id="view-recommend">
+        <div class="flow-steps" id="flow-steps" aria-label="Recommendation flow">
+          <div class="flow-step active" data-step="1"><span class="flow-num">1</span><span class="flow-label">Set priorities</span></div>
+          <div class="flow-step" data-step="2"><span class="flow-num">2</span><span class="flow-label">See ranked phones</span></div>
+          <div class="flow-step" data-step="3"><span class="flow-num">3</span><span class="flow-label">Rate each phone</span></div>
+          <div class="flow-step" data-step="4"><span class="flow-num">4</span><span class="flow-label">Evaluation tab</span></div>
+        </div>
+
+        <div class="grid split">
+          <div class="card pad-lg panel-sticky" id="req-panel">
+            <div class="card-head"><h3>Step 1 — Your priorities</h3></div>
+            <p class="hint" style="margin:0 0 14px">Choose what matters most, then rank phones. Rate each phone 1–5; scores are saved and the full model evaluation is shown on the Evaluation tab.</p>
+            <div class="presets" id="presets"></div>
+            <div id="weights"></div>
+            <hr class="soft-rule">
+            <div class="grid cols-2" style="gap:12px">
+              <label class="field" style="margin:0">
+                <span class="lbl">Min price (USD)</span>
+                <input type="number" id="budget-min" placeholder="any" min="0">
+              </label>
+              <label class="field" style="margin:0">
+                <span class="lbl">Max price (USD)</span>
+                <input type="number" id="budget-max" placeholder="any" min="0">
+              </label>
+            </div>
+            <button class="btn btn-primary btn-block mt-16" id="btn-recommend">Rank phones →</button>
+            <div class="method-toggle mt-16" id="method-toggle">
+              <span class="lbl">Ranking method</span>
+              <label class="method-option">
+                <input type="radio" name="rank-method" value="weighted" checked>
+                Your priorities (proposed)
+              </label>
+              <label class="method-option">
+                <input type="radio" name="rank-method" value="star_rating">
+                Amazon stars (baseline)
+              </label>
+              <span class="hint">Use both methods and rate each list so Evaluation can compare them.</span>
+            </div>
+          </div>
+
+          <div class="rec-flow-col">
+            <div id="rec-results">
+              <div class="card pad-lg empty-flow">
+                <div class="empty-visual" aria-hidden="true"></div>
+                <div class="empty-title">Waiting for ranking</div>
+                <div class="empty-msg">Set your priorities on the left, then click <strong>Rank phones</strong>. Your Top 10 will show here.</div>
+              </div>
+            </div>
+            <div id="rec-eval" class="rec-eval" hidden></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Phones -->
+      <section class="view active" id="view-phones">
+        <div class="card toolbar-card">
+          <div class="row wrap">
+            <input type="text" id="phone-search" placeholder="Search by name or brand…" style="max-width:320px">
+            <select id="phone-brand" style="max-width:190px"><option value="">All brands</option></select>
+            <div class="spacer"></div>
+            <span class="dim small" id="phone-count"></span>
+          </div>
+        </div>
+        <div class="grid auto mt-16" id="phone-grid"></div>
+      </section>
+
+      <!-- Evidence — pipeline proof for viva / examiners -->
+      <section class="view" id="view-evidence">
+        <div id="evidence-content"></div>
+      </section>
+
+      <!-- Evaluation — full model evaluation (all sessions) -->
+      <section class="view" id="view-evaluation">
+        <div id="eval-content"></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div class="drawer-backdrop" id="drawer-backdrop"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div style="min-width:0">
+      <h2 id="drawer-title">—</h2>
+      <div class="topbar-sub" id="drawer-sub"></div>
+    </div>
+    <button class="drawer-close" id="drawer-close">✕</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+<div id="toasts"></div>
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lightbox-close" id="lightbox-close" type="button" aria-label="Close image">✕</button>
+  <img id="lightbox-img" alt="">
+  <div class="lightbox-caption" id="lightbox-caption"></div>
+</div>
+<script src="app.js?v={{ASSET_VERSION}}"></script>
+</body>
+</html>
