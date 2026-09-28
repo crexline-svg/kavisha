@@ -4,7 +4,7 @@
 !.env.example
 
 # Scraped data, exports, saved browser session, debug artifacts
-data/
+
 docx_images/
 tests/_ui_shots/
 *.db
