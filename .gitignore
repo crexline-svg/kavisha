@@ -8,9 +8,13 @@
 docx_images/
 tests/_ui_shots/
 *.db
+!data/smartphones.db
 *.db-journal
 *.db-wal
 *.db-shm
+data/artifacts/
+data/exports/
+data/storage_state.json
 
 # Hugging Face / model caches
 .cache/

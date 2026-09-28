@@ -58,8 +58,10 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     settings.ensure_dirs()
     init_db()
     from app.services.demo import ensure_demo_if_empty
+    from app.services.scraped_csv_ingest import ensure_scraped_csv
 
-    ensure_demo_if_empty(settings)
+    if not ensure_scraped_csv(settings):
+        ensure_demo_if_empty(settings)
     logger.info(
         "%s v%s ready | db=%s | ABSA engine=%s | aspects=%s",
         settings.app_name,

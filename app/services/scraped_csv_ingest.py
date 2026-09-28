@@ -411,3 +411,46 @@ def ingest_full_reviews_csv(
     summary["brands"] = sorted(brand_set)
     report(len(by_asin), len(by_asin), "Scraped CSV ingest finished")
     return summary
+
+
+def ensure_scraped_csv(settings: Settings | None = None) -> bool:
+    """Load ``data/full_reviews.csv`` when the database has no real phones.
+
+    Skips the synthetic demo corpus. Returns True when a CSV import ran.
+    """
+    settings = settings or get_settings()
+    csv_path = settings.data_dir / "full_reviews.csv"
+
+    from sqlalchemy import func, select
+
+    from app.core.database import session_scope
+
+    with session_scope() as db:
+        real = db.scalar(
+            select(func.count()).select_from(Smartphone).where(Smartphone.source != "demo")
+        ) or 0
+    if real:
+        logger.info("Corpus already has %s scraped phone(s); leaving it in place.", real)
+        return False
+    if not csv_path.is_file():
+        return False
+
+    from app.services.analysis import run_analysis
+
+    logger.info("Loading real reviews from %s.", csv_path)
+    with session_scope() as db:
+        result = ingest_full_reviews_csv(
+            db,
+            csv_path=csv_path,
+            replace=True,
+            settings=settings,
+        )
+    if not result.get("phones_upserted"):
+        logger.warning("CSV import produced no phones.")
+        return False
+    run_analysis(
+        phone_ids=result["phone_ids"],
+        settings=settings,
+        engine_name="lexicon",
+    )
+    return True
